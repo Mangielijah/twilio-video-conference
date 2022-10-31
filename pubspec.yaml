@@ -24,13 +24,12 @@ dependencies:
   rxdart: ^0.27.1
   uuid: ^3.0.4
   wakelock: ^0.5.6
+  twilio_programmable_video:
 
 dev_dependencies:
   flutter_driver:
     sdk: flutter
   test: ^1.16.5
-  twilio_programmable_video:
-    path: ../
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

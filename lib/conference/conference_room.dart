@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:twilio_programmable_video/twilio_programmable_video.dart';
 import 'package:twilio_programmable_video_example/conference/participant_widget.dart';
 import 'package:twilio_programmable_video_example/debug.dart';
+import 'package:twilio_programmable_video_example/shared/widgets/noise_box.dart';
 import 'package:uuid/uuid.dart';
 
 class ConferenceRoom with ChangeNotifier {
@@ -94,11 +95,14 @@ class ConferenceRoom with ChangeNotifier {
         );
       } else if (sources.length > 0) {
         _cameraCapturer = CameraCapturer(sources.first);
-      } else {
-        throw Exception("No Camera Found");
       }
       trackId = Uuid().v4();
+    } catch (e) {
+      Debug.log(e);
+      rethrow;
+    }
 
+    try {
       var connectOptions = ConnectOptions(
         token,
         roomName: name,
@@ -118,7 +122,34 @@ class ConferenceRoom with ChangeNotifier {
       );
 
       _room = await TwilioProgrammableVideo.connect(connectOptions);
+    } catch (err) {
+      try {
+        var connectOptions = ConnectOptions(
+          token,
+          roomName: name,
+          preferredAudioCodecs: [OpusCodec()],
+          audioTracks: [LocalAudioTrack(true, 'audio_track-$trackId')],
+          dataTracks: [
+            LocalDataTrack(
+              DataTrackOptions(name: 'data_track-$trackId'),
+            )
+          ],
+          // videoTracks: [LocalVideoTrack(false, _cameraCapturer)],
+          enableNetworkQuality: true,
+          networkQualityConfiguration: NetworkQualityConfiguration(
+            remote: NetworkQualityVerbosity.NETWORK_QUALITY_VERBOSITY_MINIMAL,
+          ),
+          enableDominantSpeaker: true,
+        );
 
+        _room = await TwilioProgrammableVideo.connect(connectOptions);
+      } catch (e) {
+        Debug.log(e);
+        rethrow;
+      }
+    }
+
+    try {
       _streamSubscriptions.add(_room.onConnected.listen(_onConnected));
       _streamSubscriptions.add(_room.onDisconnected.listen(_onDisconnected));
       _streamSubscriptions.add(_room.onReconnecting.listen(_onReconnecting));
@@ -131,8 +162,8 @@ class ConferenceRoom with ChangeNotifier {
       await _updateSpeakerState();
 
       return _completer.future;
-    } catch (err) {
-      Debug.log(err);
+    } catch (e) {
+      Debug.log(e);
       rethrow;
     }
   }
@@ -356,10 +387,13 @@ class ConferenceRoom with ChangeNotifier {
     // Only add ourselves when connected for the first time too.
     _participants.add(
       _buildParticipant(
-          child: localParticipant.localVideoTracks[0].localVideoTrack.widget(),
+          child: (localParticipant.localVideoTracks.isNotEmpty)
+              ? localParticipant.localVideoTracks[0].localVideoTrack.widget()
+              : NoiseBox(),
           id: identity,
           audioEnabled: true,
-          videoEnabled: true,
+          videoEnabled:
+              (localParticipant.localVideoTracks.isNotEmpty) ? true : false,
           networkQualityLevel: localParticipant.networkQualityLevel,
           onNetworkQualityChanged:
               localParticipant.onNetworkQualityLevelChanged),
