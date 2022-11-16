@@ -24,7 +24,14 @@ dependencies:
   rxdart: ^0.27.1
   uuid: ^3.0.4
   wakelock: ^0.5.6
+  # twilio_programmable_video:
+  # twilio_programmable_video:
+  #   path: ../
   twilio_programmable_video:
+    git:
+      url: https://github.com/Mangielijah/twilio.git
+      ref: main # branch name
+
 
 dev_dependencies:
   flutter_driver:
